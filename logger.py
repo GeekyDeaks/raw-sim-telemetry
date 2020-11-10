@@ -8,6 +8,7 @@ import struct
 import argparse
 import os
 import threading
+import math
 from queue import Queue, Empty
 
 
@@ -192,6 +193,9 @@ if __name__ == '__main__':
 
     lastUpdate = None
     finished = False
+    lapDistance = 0
+
+    updateDistance = 1.0
 
     while acl.isAlive() and not finished:
 
@@ -210,13 +214,22 @@ if __name__ == '__main__':
                 lastUpdate = copy(update)
             elif lastUpdate.lapCount != update.lapCount:
                 logger.newlap(update)
+                lapDistance = 0
                 lastUpdate = copy(update)
                 print('lapCount: {lapCount}, lapTime: {lastLap}'.format(
                     lapCount=update.lapCount, lastLap=update.lastLap/1000)
                 )
-            elif distance(lastUpdate.coords(), update.coords()) > 1.0:
-                logger.update(update)
-                lastUpdate = copy(update)
+            else:
+                
+                # calculate the running distance
+                delta = distance(lastUpdate.coords(), update.coords())
+                lastInterval = math.floor(lapDistance / updateDistance)
+                interval = math.floor((lapDistance + delta) / updateDistance)
+                
+                if lastInterval != interval:
+                    logger.update(update)
+                    lastUpdate = copy(update)
+                    lapDistance = lapDistance + delta
 
         except Empty:
             pass
