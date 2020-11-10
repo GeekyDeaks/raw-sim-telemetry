@@ -8,7 +8,7 @@ import struct
 import argparse
 import os
 
-logattr = ['lapTime', 'speed_Mph', 'gas', 'brake', 'steer', 'gear']
+logattr = ['lapTime', 'speed_Mph', 'gas', 'brake', 'steer', 'gear', 'x', 'y', 'z']
 
 os.makedirs('out', exist_ok=True)
 
@@ -103,7 +103,6 @@ class ACSocket:
             self.socket.sendto(pkt, (self.addr, self.port))
             h = self.recv(Handshake.size)
             if h:
-                print(h)
                 return Handshake.fromData(h)
 
     def startUpdate(self):
