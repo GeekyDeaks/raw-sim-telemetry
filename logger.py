@@ -8,6 +8,8 @@ import struct
 import argparse
 import os
 
+logattr = ['lapTime', 'speed_Mph', 'gas', 'brake', 'steer', 'gear']
+
 os.makedirs('out', exist_ok=True)
 
 parser = argparse.ArgumentParser(description='Assetto Corsa Telemetry Logger')
@@ -18,7 +20,7 @@ parser.add_argument('port', nargs='?', type=int, default=9996,
 
 args = parser.parse_args()
 
-logattr = ['lapTime', 'speed_Mph', 'gas', 'brake', 'steer', 'gear']
+
 
 def distance(a, b) :
     [x1,y1,z1] = a  # first coordinates
@@ -117,53 +119,83 @@ class ACSocket:
         pkt = struct.pack('iii',1,1,3)
         self.socket.sendto(pkt, (self.addr, self.port))
 
-def output(update):
-    out = map(lambda a: str(getattr(update, a)), logattr)
-    f.write('\t'.join(out) + '\n')
-    f.flush()
+    def close(self):
+        self.dismiss()
+        self.socket.close()
 
-def newlap(update):
-    global f
-    #if f:
-    #    f.close()
-    f = open('out/{h.carName}_{h.driverName}_{h.trackName}_{h.trackConfig}_{isodate}_{u.lapCount}.txt'.format(h=h,u=update, isodate=isodate), mode='w', buffering=1)
-    f.write('\t'.join(logattr) + '\n')
-    output(update)
+class Logger:
 
-isodate = datetime.now().isoformat().replace(':', '').replace('-','')
+    def __init__(self, logattr, handshake):
+        self.handshake = handshake
+        self.logattr = logattr
+        self.isodate = datetime.now().isoformat().replace(':', '').replace('-','')
+        self.f = None
+
+    def newlap(self, update):
+        if self.f:
+            self.f.close()
+
+        fname = 'out/' + '_'.join([
+                self.handshake.driverName,
+                self.handshake.carName,
+                self.handshake.trackName,
+                self.handshake.trackConfig,
+                self.isodate,
+                str(update.lapCount)
+            ]) + '.txt'
+
+        self.f = open(fname.replace(' ', '_'), mode='w', buffering=1)
+        self.f.write('\t'.join(logattr) + '\n')
+        self.update(update)
+
+    def update(self, update):
+        if self.f:
+            out = map(lambda a: str(getattr(update, a)), self.logattr)
+            self.f.write('\t'.join(out) + '\n')
+
+    def close(self):
+        if self.f:
+            self.f.close()
+
 
 acs = ACSocket(args.host, args.port)
 acs.dismiss()
 
-h = None
-while not h:
-    h = acs.handshake()
+handshake = None
+while not handshake:
+    handshake = acs.handshake()
 
 print('connected')
-print(h)
+print(handshake)
 
-f = None
+logger = Logger(logattr, handshake)
 
 acs.startUpdate()
 
 lastUpdate = None
+finished = False
 
-while True:
+while not finished:
 
-    update = acs.nextUpdate()
-    if not update:
-        continue
+    try:
 
-    if not lastUpdate:
-        newlap(update)
-        lastUpdate = copy(update)
-    elif lastUpdate.lapCount != update.lapCount:
-        newlap(update)
-        lastUpdate = copy(update)
-    elif distance(lastUpdate.coords(), update.coords()) > 1.0:
-        output(update)
-        lastUpdate = copy(update)
+        update = acs.nextUpdate()
+        if not update:
+            continue
 
-if f:
-    f.close()
+        if not lastUpdate:
+            logger.newlap(update)
+            lastUpdate = copy(update)
+        elif lastUpdate.lapCount != update.lapCount:
+            logger.newlap(update)
+            lastUpdate = copy(update)
+            print('lapCount: {lapCount}, lapTime: {lastLap}'.format(lapCount=update.lapCount, lastLap=update.lastLap/1000))
+        elif distance(lastUpdate.coords(), update.coords()) > 1.0:
+            logger.update(update)
+            lastUpdate = copy(update)
+
+    except KeyboardInterrupt:
+        finished = True
+
+logger.close()
 acs.close()
