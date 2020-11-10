@@ -152,12 +152,12 @@ class Logger:
             self.f.close()
 
         fname = 'out/' + '_'.join([
+                self.isodate,
+                str(update.lapCount),
                 self.event.driverName,
                 self.event.carName,
                 self.event.trackName,
                 self.event.trackConfig,
-                self.isodate,
-                str(update.lapCount)
             ]) + '.txt'
 
         self.f = open(fname.replace(' ', '_'), mode='w', buffering=1)
@@ -188,7 +188,7 @@ if __name__ == '__main__':
     acl = ACListener(args.host, args.port)
     acl.start()
 
-    logger = Logger(logattr, acl.event)
+    logger = None
 
     lastUpdate = None
     finished = False
@@ -198,6 +198,9 @@ if __name__ == '__main__':
         try:
 
             update = acl.updates.get(timeout=1) # to allow windows to use CTRL+C
+
+            if not logger:
+                logger = Logger(logattr, acl.event)
 
             if not update:
                 continue
