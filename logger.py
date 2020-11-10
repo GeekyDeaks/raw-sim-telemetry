@@ -7,18 +7,8 @@ from datetime import datetime
 import struct
 import argparse
 import os
-
-logattr = ['lapTime', 'speed_Mph', 'gas', 'brake', 'steer', 'gear', 'x', 'y', 'z']
-
-os.makedirs('out', exist_ok=True)
-
-parser = argparse.ArgumentParser(description='Assetto Corsa Telemetry Logger')
-parser.add_argument('host', nargs='?', default='127.0.0.1',
-                   help='host IP address running AC')
-parser.add_argument('port', nargs='?', type=int, default=9996,
-            help='UDP port AC is listening on')     
-
-args = parser.parse_args()
+import threading
+from queue import Queue, Empty
 
 
 
@@ -71,20 +61,47 @@ class Update:
         return [self.x, self.y, self.z]
 
 
-class ACSocket:
+class ACListener(threading.Thread):
 
     def __init__(self, addr = '127.0.0.1', port=9996):
+        super(ACListener,self).__init__()
         self.addr = addr
         self.port = port
         self.socket = socket(AF_INET,SOCK_DGRAM)
         self.socket.setblocking(0)
         self.connected = False
+        self.event = None
+        self.updates = Queue()
+
+    def run(self):
+
+        self.running = True
+
+        self.dismiss()
+
+        while self.running and not self.event:
+            self.event = self.handshake()
+
+        if self.event:
+            print('connected')
+            print(self.event)
+
+            self.startUpdate()
+
+            while self.running:
+                self.nextUpdate()
+
+        self.dismiss()
+        self.close()
+
+    def stop(self):
+        self.running = False
 
     def recv(self, size):
         chunks = []
         bytes_recv = 0
 
-        ready = select([self.socket], [], [], 5)
+        ready = select([self.socket], [], [], 2)
         if ready[0]:
 
             while bytes_recv < size:
@@ -98,12 +115,12 @@ class ACSocket:
             return b''.join(chunks)
 
     def handshake(self):
-            print('sending handshake to {self.addr}:{self.port}'.format(self=self))
-            pkt = struct.pack('iii',1,1,0)
-            self.socket.sendto(pkt, (self.addr, self.port))
-            h = self.recv(Handshake.size)
-            if h:
-                return Handshake.fromData(h)
+        print('sending handshake to {self.addr}:{self.port}'.format(self=self))
+        pkt = struct.pack('iii',1,1,0)
+        self.socket.sendto(pkt, (self.addr, self.port))
+        h = self.recv(Handshake.size)
+        if h:
+            return Handshake.fromData(h)
 
     def startUpdate(self):
         pkt = struct.pack('iii',1,1,1)
@@ -112,7 +129,7 @@ class ACSocket:
     def nextUpdate(self):
         u = self.recv(Update.size)
         if u:
-            return Update.fromData(u)
+            self.updates.put(Update.fromData(u), block=False)
 
     def dismiss(self):
         pkt = struct.pack('iii',1,1,3)
@@ -124,8 +141,8 @@ class ACSocket:
 
 class Logger:
 
-    def __init__(self, logattr, handshake):
-        self.handshake = handshake
+    def __init__(self, logattr, event):
+        self.event = event
         self.logattr = logattr
         self.isodate = datetime.now().isoformat().replace(':', '').replace('-','')
         self.f = None
@@ -135,10 +152,10 @@ class Logger:
             self.f.close()
 
         fname = 'out/' + '_'.join([
-                self.handshake.driverName,
-                self.handshake.carName,
-                self.handshake.trackName,
-                self.handshake.trackConfig,
+                self.event.driverName,
+                self.event.carName,
+                self.event.trackName,
+                self.event.trackConfig,
                 self.isodate,
                 str(update.lapCount)
             ]) + '.txt'
@@ -156,45 +173,55 @@ class Logger:
         if self.f:
             self.f.close()
 
+if __name__ == '__main__':
 
-acs = ACSocket(args.host, args.port)
-acs.dismiss()
+    logattr = ['lapTime', 'speed_Mph', 'gas', 'brake', 'steer', 'gear', 'x', 'y', 'z']
+    os.makedirs('out', exist_ok=True)
+    parser = argparse.ArgumentParser(description='Assetto Corsa Telemetry Logger')
+    parser.add_argument('host', nargs='?', default='127.0.0.1',
+                    help='host IP address running AC')
+    parser.add_argument('port', nargs='?', type=int, default=9996,
+                help='UDP port AC is listening on')     
 
-handshake = None
-while not handshake:
-    handshake = acs.handshake()
+    args = parser.parse_args()
 
-print('connected')
-print(handshake)
+    acl = ACListener(args.host, args.port)
+    acl.start()
 
-logger = Logger(logattr, handshake)
+    logger = Logger(logattr, acl.event)
 
-acs.startUpdate()
+    lastUpdate = None
+    finished = False
 
-lastUpdate = None
-finished = False
+    while acl.isAlive() and not finished:
 
-while not finished:
+        try:
 
-    try:
+            update = acl.updates.get(timeout=1) # to allow windows to use CTRL+C
 
-        update = acs.nextUpdate()
-        if not update:
-            continue
+            if not update:
+                continue
 
-        if not lastUpdate:
-            logger.newlap(update)
-            lastUpdate = copy(update)
-        elif lastUpdate.lapCount != update.lapCount:
-            logger.newlap(update)
-            lastUpdate = copy(update)
-            print('lapCount: {lapCount}, lapTime: {lastLap}'.format(lapCount=update.lapCount, lastLap=update.lastLap/1000))
-        elif distance(lastUpdate.coords(), update.coords()) > 1.0:
-            logger.update(update)
-            lastUpdate = copy(update)
+            if not lastUpdate:
+                logger.newlap(update)
+                lastUpdate = copy(update)
+            elif lastUpdate.lapCount != update.lapCount:
+                logger.newlap(update)
+                lastUpdate = copy(update)
+                print('lapCount: {lapCount}, lapTime: {lastLap}'.format(
+                    lapCount=update.lapCount, lastLap=update.lastLap/1000)
+                )
+            elif distance(lastUpdate.coords(), update.coords()) > 1.0:
+                logger.update(update)
+                lastUpdate = copy(update)
 
-    except KeyboardInterrupt:
-        finished = True
+        except Empty:
+            pass
 
-logger.close()
-acs.close()
+        except KeyboardInterrupt:
+            print('stopping')
+            finished = True
+
+    logger.close()
+    acl.stop()
+    acl.join()
