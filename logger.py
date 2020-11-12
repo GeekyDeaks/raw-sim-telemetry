@@ -228,9 +228,9 @@ if __name__ == '__main__':
             if not lastUpdate:
                 logger.newlap(update)
                 lastUpdate = copy(update)
-            elif lastUpdate.lapCount != update.lapCount or lastUpdate.lapTime > update.lapTime:
+            elif lastUpdate.lapCount != update.lapCount or lastUpdate.lapTime > (update.lapTime + 5):
 
-                if lastUpdate.lapCount >= update.lapCount:
+                if lastUpdate.lapCount > update.lapCount + 5:
                     # must have re-started the event
                     # so get a new logger
                     logger.close()

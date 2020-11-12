@@ -6,8 +6,8 @@ import math
 
 import csv
 
-file1 = 'log/imola/ks_corvette_c7r/20201112T183406.636080_Scott_Deakin/lap_0.txt'
-file2 = 'log/imola/ks_corvette_c7r/20201112T181836.263851_Scott_Deakin/lap_0.txt'
+file1 = 'log/imola/ks_corvette_c7r/20201112T215006_Scott_Deakin/lap_0.txt'
+file2 = 'log/imola/ks_corvette_c7r/20201112T215006_Scott_Deakin/lap_2.txt'
 
 plot_width=1200
 plot_height=600
@@ -38,7 +38,7 @@ dlen = min(len(data1['gas']), len(data2['gas']))
 print(dlen)
 delta = []
 for i,j in zip(data1['lapTime'],data2['lapTime']):
-    delta.append(int(j) - int(i))
+    delta.append(float(j) - float(i))
 
 data = {
     'distance': data1['distance'][:dlen],
