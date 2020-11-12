@@ -9,10 +9,11 @@ Crude Assetto Corsa Telemetry logger
 Dumps telemetry per lap into the `out` directory
 
 
-# python venv
+# plotting
 
     python3 -m venv py
     py/bin/pip install bokeh numpy
+    py/bin/python plot-simple.py
 
 # reference
 
