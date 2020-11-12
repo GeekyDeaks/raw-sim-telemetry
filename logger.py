@@ -51,6 +51,10 @@ class Update:
         self.gas, self.brake, self.clutch, self.engineRPM, self.steer, \
         self.gear, self.x, self.y, self.z = t
 
+        self.lapTime = self.lapTime / 1000
+        self.lastLap = self.lastLap / 1000
+        self.bestLap = self.bestLap / 1000
+
     @classmethod
     def fromData(cls, d):
         return cls(struct.unpack(Update.fmt, d))
@@ -147,19 +151,29 @@ class Logger:
         self.logattr = logattr
         self.isodate = datetime.now().isoformat().replace(':', '').replace('-','')
         self.f = None
+        trackName = event.trackName
+        if(event.trackName != event.trackConfig):
+            trackName = trackName + '_' + event.trackConfig
+        self.path = os.path.join('log', trackName, self.event.carName, self.isodate + '_' + self.event.driverName)
+        self.path = self.path.replace(' ', '_')
+        os.makedirs(self.path, exist_ok=True)
+
+        lapfn = os.path.join(self.path, 'laps.txt')
+        self.lf = open(lapfn, mode='w', buffering=1)
+        self.lf.write('\t'.join(['lap', 'time']) + '\n')
 
     def newlap(self, update):
         if self.f:
             self.f.close()
 
-        fname = 'out/' + '_'.join([
-                self.isodate,
-                str(update.lapCount),
-                self.event.driverName,
-                self.event.carName,
-                self.event.trackName,
-                self.event.trackConfig,
-            ]) + '.txt'
+        if(update.lapCount > 0):
+            print('lap: {lapCount}, time: {lastLap}'.format(
+                lapCount=update.lapCount - 1, lastLap=update.lastLap)
+            )
+            self.lf.write('\t'.join([str(update.lapCount - 1), str(update.lastLap)]) + '\n')
+            self.lf.flush()
+
+        fname = os.path.join(self.path, 'lap_' +  str(update.lapCount) + '.txt')
 
         self.f = open(fname.replace(' ', '_'), mode='w', buffering=1)
         self.f.write('\t'.join(logattr) + '\n')
@@ -169,15 +183,17 @@ class Logger:
         if self.f:
             out = map(lambda a: str(getattr(update, a)), self.logattr)
             self.f.write('\t'.join(out) + '\n')
+            self.f.flush()
 
     def close(self):
         if self.f:
             self.f.close()
+        if self.lf:
+            self.lf.close()
 
 if __name__ == '__main__':
 
     logattr = ['lapTime', 'speed_Mph', 'gas', 'brake', 'steer', 'gear', 'x', 'y', 'z']
-    os.makedirs('out', exist_ok=True)
     parser = argparse.ArgumentParser(description='Assetto Corsa Telemetry Logger')
     parser.add_argument('host', nargs='?', default='127.0.0.1',
                     help='host IP address running AC')
@@ -197,7 +213,7 @@ if __name__ == '__main__':
 
     updateDistance = 1.0
 
-    while acl.isAlive() and not finished:
+    while acl.is_alive() and not finished:
 
         try:
 
@@ -212,13 +228,17 @@ if __name__ == '__main__':
             if not lastUpdate:
                 logger.newlap(update)
                 lastUpdate = copy(update)
-            elif lastUpdate.lapCount != update.lapCount:
+            elif lastUpdate.lapCount != update.lapCount or lastUpdate.lapTime > update.lapTime:
+
+                if lastUpdate.lapCount >= update.lapCount:
+                    # must have re-started the event
+                    # so get a new logger
+                    logger.close()
+                    logger = Logger(logattr, acl.event)
+
                 logger.newlap(update)
                 lapDistance = 0
                 lastUpdate = copy(update)
-                print('lapCount: {lapCount}, lapTime: {lastLap}'.format(
-                    lapCount=update.lapCount, lastLap=update.lastLap/1000)
-                )
             else:
                 
                 # calculate the running distance

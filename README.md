@@ -8,6 +8,12 @@ Crude Assetto Corsa Telemetry logger
 
 Dumps telemetry per lap into the `out` directory
 
+
+# python venv
+
+    python3 -m venv py
+    py/bin/pip install bokeh numpy
+
 # reference
 
 * https://github.com/gotzl/ldparser

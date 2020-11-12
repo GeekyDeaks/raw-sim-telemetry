@@ -1,3 +1,6 @@
 .DS_Store/
 out/
 tmp/
+py/
+log/
+__pycache__/
