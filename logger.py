@@ -149,7 +149,7 @@ class Logger:
     def __init__(self, logattr, event):
         self.event = event
         self.logattr = logattr
-        self.isodate = datetime.now().isoformat().replace(':', '').replace('-','')
+        self.isodate = datetime.now().strftime('%Y%m%dT%H%M%S')
         self.f = None
         trackName = event.trackName
         if(event.trackName != event.trackConfig):
