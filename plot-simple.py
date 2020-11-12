@@ -9,6 +9,9 @@ import csv
 file1 = 'log/imola/ks_corvette_c7r/20201112T183406.636080_Scott_Deakin/lap_0.txt'
 file2 = 'log/imola/ks_corvette_c7r/20201112T181836.263851_Scott_Deakin/lap_0.txt'
 
+plot_width=1200
+plot_height=600
+
 def load_lap(file):
 
     data = {}
@@ -55,7 +58,7 @@ output_file("lines.html")
 
 # create a new plot with a title and axis labels
 p = figure(
-    plot_height=600, plot_width=1200,
+    plot_height=plot_height, plot_width=plot_width,
     toolbar_location=None,
     tools='xpan, hover',
     title="AC Telemetry", x_axis_label='distance', y_axis_label='mph',
@@ -63,7 +66,7 @@ p = figure(
 
 
 select = figure(title="Drag the middle and edges of the selection box to change the range above",
-                plot_height=130, plot_width=1200,
+                plot_height=130, plot_width=plot_width,
                 x_axis_type=None, y_axis_label='delta (s)',
                 tools="", toolbar_location=None, background_fill_color="#efefef")
 
