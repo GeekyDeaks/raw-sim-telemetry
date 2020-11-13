@@ -6,8 +6,9 @@ Crude Assetto Corsa Telemetry logger, written specifically to address the lack o
 
     python3 logger.py [IP address]
 
-Dumps telemetry per lap into a subdirectory of the `log` directory, with one row per approximate meter travelled
-and a summary `laps.txt`
+This will intiate the telemetry feed from an instance of AC running on the target IP.
+It will log telemetry per lap into a subdirectory of the `log` directory, 
+with one row per approximate meter travelled and a summary `laps.txt`
 
 # plotting
 
@@ -20,6 +21,9 @@ To plot you will need to install the [bokeh](https://docs.bokeh.org/en/latest/in
 This will create an output html file that looks something like this:
 
 ![example](example.png)
+
+You can click on the legends to mute any trace and the bottom slider allows you to narrow down the analysis
+to a specific range of measurements
 
 # TODO
 
