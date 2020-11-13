@@ -6,7 +6,7 @@ Crude Assetto Corsa Telemetry logger
 
     python3 logger.py [IP address]
 
-Dumps telemetry per lap into the `out` directory
+Dumps telemetry per lap into the `log` directory
 
 
 # plotting

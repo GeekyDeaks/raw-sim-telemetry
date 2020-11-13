@@ -27,27 +27,36 @@ def load_lap(file):
                 data[h].append(float(v))
     return data
 
+def pad_data(data, padlen):
+    return data + ([float('NaN')] * (padlen - len(data)) )
+
 data1 = load_lap(file1)
 data2 = load_lap(file2)
 
+dlen1 = len(data1['distance'])
+dlen2 = len(data2['distance'])
 
 # prepare some data
-dlen = min(len(data1['gas']), len(data2['gas']))
-print(dlen)
+padto = max(dlen1, dlen2)
+
 delta = []
 for i,j in zip(data1['lapTime'],data2['lapTime']):
     delta.append(float(j) - float(i))
 
 data = {
-    'distance': data1['distance'][:dlen],
-    'mph1': data1['speed_Mph'][:dlen],
-    'mph2': data2['speed_Mph'][:dlen],
-    'gas1': data1['gas'][:dlen],
-    'gas2': data2['gas'][:dlen],
-    'brake1': data1['brake'][:dlen],
-    'brake2': data2['brake'][:dlen],
-    'delta': delta
+    'mph1': pad_data(data1['speed_Mph'], padto),
+    'mph2': pad_data(data2['speed_Mph'], padto),
+    'gas1': pad_data(data1['gas'], padto),
+    'gas2': pad_data(data2['gas'], padto),
+    'brake1': pad_data(data1['brake'], padto),
+    'brake2': pad_data(data2['brake'], padto),
+    'delta': pad_data(delta, padto)
 }
+
+if dlen1 < dlen2:
+    data['distance'] = data2['distance']
+else:
+    data['distance'] = data1['distance']
 
 source = ColumnDataSource(data=data)
 
@@ -77,9 +86,9 @@ select = figure(title="Drag the middle and edges of the selection box to change 
                 tools="", toolbar_location=None, background_fill_color="#f9f9f9")
 
 
-mph1_max = max(data['mph1'])
-mph2_max = max(data['mph2'])
-p.y_range = Range1d(start=0, end=max(mph1_max, mph2_max) )
+#mph1_max = max(data['mph1'])
+#mph2_max = max(data['mph2'])
+#p.y_range = Range1d(start=0, end=max(mph1_max, mph2_max) )
 p.extra_y_ranges['pedal'] = Range1d(start=0, end=1.01)
 p.add_layout(LinearAxis(y_range_name='pedal', axis_label='pedal'), 'right')
 
@@ -98,7 +107,7 @@ range_tool = RangeTool(x_range=p.x_range)
 range_tool.overlay.fill_color = "navy"
 range_tool.overlay.fill_alpha = .2
 
-select.y_range = Range1d(start=min(data['delta']), end=max(data['delta']) )
+#select.y_range = Range1d(start=min(data['delta']), end=max(data['delta']) )
 select.line('distance', 'delta', source=source)
 #select.ygrid.grid_line_color = None
 select.add_tools(range_tool)

@@ -166,14 +166,13 @@ class Logger:
         if self.f:
             self.f.close()
 
-        if(update.lapCount > 0):
-            print('lap: {lapCount}, time: {lastLap}'.format(
-                lapCount=update.lapCount - 1, lastLap=update.lastLap)
-            )
-            self.lf.write('\t'.join([str(update.lapCount - 1), str(update.lastLap)]) + '\n')
-            self.lf.flush()
+        print('lap: {lapCount}, time: {lastLap}'.format(
+            lapCount=update.lapCount, lastLap=update.lastLap)
+        )
+        self.lf.write('\t'.join([str(update.lapCount), str(update.lastLap)]) + '\n')
+        self.lf.flush()
 
-        fname = os.path.join(self.path, 'lap_' +  str(update.lapCount) + '.txt')
+        fname = os.path.join(self.path, 'lap_' +  str(update.lapCount + 1) + '.txt')
 
         self.f = open(fname.replace(' ', '_'), mode='w', buffering=1)
         self.f.write('\t'.join(logattr) + '\n')
