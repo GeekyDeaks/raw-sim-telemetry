@@ -30,6 +30,9 @@ def load_lap(file):
 def pad_data(data, padlen):
     return data + ([float('NaN')] * (padlen - len(data)) )
 
+def invert_data(data):
+    return list(map( lambda x: -x, data))
+
 data1 = load_lap(file1)
 data2 = load_lap(file2)
 
@@ -51,9 +54,9 @@ data = {
     'brake1': pad_data(data1['brake'], padto),
     'brake2': pad_data(data2['brake'], padto),
     'delta': pad_data(delta, padto),
-    'x1': pad_data(data1['x'], padto),
+    'x1': pad_data(invert_data(data1['x']), padto),
     'z1': pad_data(data1['z'], padto),
-    'x2': pad_data(data2['x'], padto),
+    'x2': pad_data(invert_data(data2['x']), padto),
     'z2': pad_data(data2['z'], padto)
 }
 
