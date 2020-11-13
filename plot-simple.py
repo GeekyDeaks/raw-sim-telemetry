@@ -138,10 +138,11 @@ select.toolbar.active_multi = range_tool
 
 #
 trk_update = CustomJS(args=dict(src=source, dst=track_source), code= """
-        const start = cb_obj.start
-        const end = cb_obj.end
         var s = src.data;
         var d = dst.data;
+        const start = Math.max(0, cb_obj.start)
+        const end = Math.min(s['x1'].length, cb_obj.end)
+
         d['x1'] = s['x1'].slice(start, end)
         d['z1'] = s['z1'].slice(start, end)
         d['x2'] = s['x2'].slice(start, end)
