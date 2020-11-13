@@ -169,8 +169,9 @@ class Logger:
         print('lap: {lapCount}, time: {lastLap}'.format(
             lapCount=update.lapCount, lastLap=update.lastLap)
         )
-        self.lf.write('\t'.join([str(update.lapCount), str(update.lastLap)]) + '\n')
-        self.lf.flush()
+        if update.lapCount > 0:
+            self.lf.write('\t'.join([str(update.lapCount), str(update.lastLap)]) + '\n')
+            self.lf.flush()
 
         fname = os.path.join(self.path, 'lap_' +  str(update.lapCount + 1) + '.txt')
 
