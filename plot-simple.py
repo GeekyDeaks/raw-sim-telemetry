@@ -1,13 +1,13 @@
 from bokeh.plotting import figure, output_file, show
 
-from bokeh.layouts import column
-from bokeh.models import ColumnDataSource, RangeTool, LinearAxis, Range1d, Title
+from bokeh.layouts import column, row
+from bokeh.models import ColumnDataSource, RangeTool, LinearAxis, Range1d, Title, FileInput, CustomJS
 import csv
 
 file1 = 'log/imola/ks_corvette_c7r/20201112T215006_Scott_Deakin/lap_2.txt'
 file2 = 'log/imola/ks_corvette_c7r/20201112T215006_Scott_Deakin/lap_0.txt'
 
-plot_width=1200
+plot_width=800
 plot_height=600
 
 def load_lap(file):
@@ -50,8 +50,24 @@ data = {
     'gas2': pad_data(data2['gas'], padto),
     'brake1': pad_data(data1['brake'], padto),
     'brake2': pad_data(data2['brake'], padto),
-    'delta': pad_data(delta, padto)
+    'delta': pad_data(delta, padto),
+    'x1': pad_data(data1['x'], padto),
+    'z1': pad_data(data1['z'], padto),
+    'x2': pad_data(data2['x'], padto),
+    'z2': pad_data(data2['z'], padto)
 }
+
+# calculate a starting range
+range_start=int(padto * 0.25)
+range_end=int(padto * 0.5)
+
+# some empty data for the track
+track_source = ColumnDataSource(data=dict(
+    x1=data['x1'][range_start:range_end], 
+    z1=data['z1'][range_start:range_end], 
+    x2=data['x2'][range_start:range_end],
+    z2=data['z2'][range_start:range_end]
+))
 
 if dlen1 < dlen2:
     data['distance'] = data2['distance']
@@ -74,7 +90,7 @@ p = figure(
     toolbar_location=None,
     tools='xpan, hover',
     tooltips=TOOLTIPS, x_axis_label='distance', y_axis_label='mph',
-        x_range=(200, 800))
+        x_range=(range_start, range_end))
 
 p.add_layout(Title(text="(2) " + file2, text_font_style="italic"), 'above')
 p.add_layout(Title(text="(1) " + file1, text_font_style="italic"), 'above')
@@ -85,6 +101,13 @@ select = figure(title="Drag the middle and edges of the selection box to change 
                 x_axis_type=None, y_axis_label='delta (s)',
                 tools="", toolbar_location=None, background_fill_color="#f9f9f9")
 
+
+track = figure(title='Track', plot_width=plot_height, plot_height=plot_height)
+track.line('x1', 'z1', source=track_source, line_width=2, muted_alpha=0.2, legend_label='lap1')
+track.line('x2', 'z2', source=track_source, line_width=2, muted_alpha=0.2, legend_label='lap2', line_dash='dashed')
+track.legend.location = "top_left"
+track.legend.click_policy="mute"
+track.match_aspect = True
 
 #mph1_max = max(data['mph1'])
 #mph2_max = max(data['mph2'])
@@ -113,5 +136,21 @@ select.line('distance', 'delta', source=source)
 select.add_tools(range_tool)
 select.toolbar.active_multi = range_tool
 
+#
+trk_update = CustomJS(args=dict(src=source, dst=track_source), code= """
+        const start = cb_obj.start
+        const end = cb_obj.end
+        var s = src.data;
+        var d = dst.data;
+        d['x1'] = s['x1'].slice(start, end)
+        d['z1'] = s['z1'].slice(start, end)
+        d['x2'] = s['x2'].slice(start, end)
+        d['z2'] = s['z2'].slice(start, end)
+        dst.change.emit();
+""")
+
+p.x_range.js_on_change('start', trk_update) 
+p.x_range.js_on_change('end', trk_update) 
+
 # show the results
-show(column(p, select))
+show(column(row(p, track), select))
