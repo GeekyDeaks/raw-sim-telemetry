@@ -3,6 +3,7 @@ from bokeh.plotting import figure, output_file, show
 from bokeh.layouts import column, row
 from bokeh.models import ColumnDataSource, RangeTool, LinearAxis, Range1d, Title, FileInput, CustomJS, HoverTool
 import csv
+from datetime import datetime
 import argparse
 
 def load_lap(file):
@@ -79,7 +80,7 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
     source = ColumnDataSource(data=data)
 
     # output to static HTML file
-    output_file(output)
+    output_file(output, title='AC Telemetry')
 
     # main plot showing the telemetry
     p = figure(
@@ -88,8 +89,11 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
         tools='xpan', x_axis_label='distance', y_axis_label='mph',
             x_range=(range_start, range_end))
 
-    p.add_layout(Title(text="(2) " + file2, text_font_style="italic"), 'above')
-    p.add_layout(Title(text="(1) " + file1, text_font_style="italic"), 'above')
+    lap1time = datetime.fromtimestamp(data1['lapTime'][-1]).strftime('%M:%S:%f')[:-3]
+    lap2time = datetime.fromtimestamp(data2['lapTime'][-1]).strftime('%M:%S:%f')[:-3]
+
+    p.add_layout(Title(text="(2) " + lap2time + ' | ' + file2, text_font_style="normal"), 'above')
+    p.add_layout(Title(text="(1) " + lap1time + ' | ' + file1, text_font_style="bold"), 'above')
     p.add_layout(Title(text="AC Telemetry", text_font_size="16pt"), 'above')
 
     hover_tool = HoverTool(
