@@ -171,7 +171,7 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
         var p = pos_source.data
         const start = Math.max(0, cb_obj.start)
         const end = Math.min(s['x1'].length, cb_obj.end)
-        const mid = Math.round( (end - start) / 2 + start )
+        const mid = Math.round( (cb_obj.end - cb_obj.start) / 2 + cb_obj.start )
 
         mid_span.location = mid
 
