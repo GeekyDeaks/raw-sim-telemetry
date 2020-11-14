@@ -16,11 +16,11 @@ To plot you will need to install the [bokeh](https://docs.bokeh.org/en/latest/in
 
     python3 -m venv py
     py/bin/pip install bokeh
-    py/bin/python plot.py [lap1 file] [lap2 file]
+    py/bin/python plot-example-split.py
 
 This will create an output html file that looks something like this:
 
-![example](example.png)
+![example-split](example-split.png)
 
 You can click on the legends to mute any trace and the bottom slider allows you to narrow down the analysis
 to a specific range of measurements
