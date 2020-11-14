@@ -72,6 +72,11 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
         z2=data['z2'][range_start:range_end]
     ))
 
+    pos_source = ColumnDataSource(data=dict(
+        x=[ data['x1'][range_mid] ],
+        z=[ data['z1'][range_mid] ]
+    ))
+
     # we want to use the distance of the longest list
     if dlen1 < dlen2:
         data['distance'] = data2['distance']
@@ -123,6 +128,7 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
         tools='', toolbar_location=None, x_axis_label='meters', y_axis_label='meters')
     track.line('x1', 'z1', source=track_source, line_width=2, muted_alpha=0.2, legend_label='lap1')
     track.line('x2', 'z2', source=track_source, line_width=2, muted_alpha=0.2, legend_label='lap2', line_dash='dashed')
+    track.circle_cross('x', 'z', source=pos_source, size=20, color='black', alpha=0.2)
     track.legend.location = "top_left"
     track.legend.click_policy="mute"
     # make sure the units are kept the same on x,z
@@ -159,20 +165,25 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
     select.add_layout(mid_span)
 
     # when the range changes, update the track points we are plotting
-    trk_update = CustomJS(args=dict(src=source, dst=track_source, mid_span=mid_span), code= """
-        var s = src.data;
-        var d = dst.data;
+    trk_update = CustomJS(args=dict(src=source, dst=track_source, mid_span=mid_span, pos_source=pos_source), code= """
+        var s = src.data
+        var d = dst.data
+        var p = pos_source.data
         const start = Math.max(0, cb_obj.start)
         const end = Math.min(s['x1'].length, cb_obj.end)
         const mid = Math.round( (end - start) / 2 + start )
 
         mid_span.location = mid
 
+        p['x'][0] = s['x1'][mid]
+        p['z'][0] = s['z1'][mid]
+
         d['x1'] = s['x1'].slice(start, end)
         d['z1'] = s['z1'].slice(start, end)
         d['x2'] = s['x2'].slice(start, end)
         d['z2'] = s['z2'].slice(start, end)
         dst.change.emit()
+        pos_source.change.emit()
     """)
 
     p.x_range.js_on_change('start', trk_update) 
