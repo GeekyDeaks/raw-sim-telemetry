@@ -1,7 +1,7 @@
 from bokeh.plotting import figure, output_file, show
 
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, RangeTool, LinearAxis, Range1d, Title, FileInput, CustomJS
+from bokeh.models import ColumnDataSource, RangeTool, LinearAxis, Range1d, Title, FileInput, CustomJS, HoverTool
 import csv
 import argparse
 
@@ -81,22 +81,28 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
     # output to static HTML file
     output_file(output)
 
-    TOOLTIPS = [
-        ("distance", "$x"),
-        ("value", "$y")
-    ]
-
     # main plot showing the telemetry
     p = figure(
         plot_height=plot_height, plot_width=int(plot_width * .6),
         toolbar_location=None,
-        tools='xpan, hover',
-        tooltips=TOOLTIPS, x_axis_label='distance', y_axis_label='mph',
+        tools='xpan', x_axis_label='distance', y_axis_label='mph',
             x_range=(range_start, range_end))
 
     p.add_layout(Title(text="(2) " + file2, text_font_style="italic"), 'above')
     p.add_layout(Title(text="(1) " + file1, text_font_style="italic"), 'above')
     p.add_layout(Title(text="AC Telemetry", text_font_size="16pt"), 'above')
+
+    hover_tool = HoverTool(
+        tooltips = [
+            ('mph', '@mph1{0.00 a} / @mph2{0.00 a}'),
+            ('gas', '@gas1{0.00 a} / @gas2{0.00 a}'),
+            ('brake', '@brake1{0.00 a} / @brake2{0.00 a}'),
+            ('delta', '@delta{0.00 a}')
+        ],
+        mode = 'vline',
+        names=['mph2']
+    )
+    p.add_tools(hover_tool)
 
     # zoom plot used to narrow down the other plots
     # shows the delta from lap1 to lap2
@@ -122,12 +128,12 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
     p.add_layout(LinearAxis(y_range_name='pedal', axis_label='pedal'), 'right')
 
     # add all the telemetry lines
-    p.line('distance', 'mph1', muted_alpha=0.2, source=source, legend_label="mph1", line_width=2)
-    p.line('distance', 'mph2', muted_alpha=0.2, source=source, legend_label="mph2", line_width=2, line_dash='dashed')
-    p.line('distance', 'gas1', muted_alpha=0.2, source=source, color='green', legend_label="gas1", line_width=2, y_range_name = 'pedal')
-    p.line('distance', 'gas2', muted_alpha=0.2, source=source, color='green', legend_label="gas2", line_width=2, line_dash='dashed', y_range_name = 'pedal')
-    p.line('distance', 'brake1', muted_alpha=0.2, source=source, color='red', legend_label="brake1", line_width=2, y_range_name = 'pedal')
-    p.line('distance', 'brake2', muted_alpha=0.2, source=source, color='red', legend_label="brake2", line_width=2, line_dash='dashed', y_range_name = 'pedal')
+    p.line('distance', 'mph1', name='mph1', muted_alpha=0.2, source=source, legend_label="mph1", line_width=2)
+    p.line('distance', 'mph2', name='mph2', muted_alpha=0.2, source=source, legend_label="mph2", line_width=2, line_dash='dashed')
+    p.line('distance', 'gas1', name='gas1', muted_alpha=0.2, source=source, color='green', legend_label="gas1", line_width=2, y_range_name = 'pedal')
+    p.line('distance', 'gas2', name='gas2', muted_alpha=0.2, source=source, color='green', legend_label="gas2", line_width=2, line_dash='dashed', y_range_name = 'pedal')
+    p.line('distance', 'brake1', name='brake1', muted_alpha=0.2, source=source, color='red', legend_label="brake1", line_width=2, y_range_name = 'pedal')
+    p.line('distance', 'brake2', name='brake2', muted_alpha=0.2, source=source, color='red', legend_label="brake2", line_width=2, line_dash='dashed', y_range_name = 'pedal')
 
     p.legend.location = "top_left"
     p.legend.click_policy="mute"
