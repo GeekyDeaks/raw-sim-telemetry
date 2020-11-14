@@ -73,8 +73,10 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
     ))
 
     pos_source = ColumnDataSource(data=dict(
-        x=[ data['x1'][range_mid] ],
-        z=[ data['z1'][range_mid] ]
+        x1=[ data['x1'][range_mid] ],
+        z1=[ data['z1'][range_mid] ],
+        x2=[ data['x2'][range_mid] ],
+        z2=[ data['z2'][range_mid] ],
     ))
 
     # we want to use the distance of the longest list
@@ -126,9 +128,10 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
     # would be visible with the range currently set
     track = figure(title='Track', plot_width=int(plot_width * .4), plot_height=plot_height, 
         tools='', toolbar_location=None, x_axis_label='meters', y_axis_label='meters')
-    track.line('x1', 'z1', source=track_source, line_width=2, muted_alpha=0.2, legend_label='lap1')
-    track.line('x2', 'z2', source=track_source, line_width=2, muted_alpha=0.2, legend_label='lap2', line_dash='dashed')
-    track.circle_cross('x', 'z', source=pos_source, size=20, color='black', alpha=0.2)
+    track.line('x1', 'z1', source=track_source, line_width=2, muted_alpha=0.2, legend_label='lap1', color='green')
+    track.line('x2', 'z2', source=track_source, line_width=2, muted_alpha=0.2, legend_label='lap2', color='blue', line_dash='dashed')
+    track.circle_cross('x1', 'z1', source=pos_source, size=20, color='green', alpha=0.2)
+    track.circle_cross('x2', 'z2', source=pos_source, size=20, color='blue', alpha=0.2)
     track.legend.location = "top_left"
     track.legend.click_policy="mute"
     # make sure the units are kept the same on x,z
@@ -175,8 +178,10 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
 
         mid_span.location = mid
 
-        p['x'][0] = s['x1'][mid]
-        p['z'][0] = s['z1'][mid]
+        p['x1'][0] = s['x1'][mid]
+        p['z1'][0] = s['z1'][mid]
+        p['x2'][0] = s['x2'][mid]
+        p['z2'][0] = s['z2'][mid]
 
         d['x1'] = s['x1'].slice(start, end)
         d['z1'] = s['z1'].slice(start, end)
