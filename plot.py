@@ -1,7 +1,7 @@
 from bokeh.plotting import figure, output_file, show
 
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, RangeTool, LinearAxis, Range1d, Title, FileInput, CustomJS, HoverTool
+from bokeh.models import ColumnDataSource, RangeTool, LinearAxis, Range1d, Title, FileInput, CustomJS, HoverTool, Span
 import csv
 from datetime import datetime
 import argparse
@@ -62,6 +62,7 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
     # calculate a starting range
     range_start=int(padto * 0.25)
     range_end=int(padto * 0.5)
+    range_mid = int( (range_end - range_start) / 2 + range_start  )
 
     # some initial data for the track, using the range determined above
     track_source = ColumnDataSource(data=dict(
@@ -152,18 +153,26 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
     select.add_tools(range_tool)
     select.toolbar.active_multi = range_tool
 
+    mid_span = Span(location=range_mid, dimension='height', line_dash='solid', 
+        line_color='black', line_width=3, line_alpha=0.2)
+    p.add_layout(mid_span)
+    select.add_layout(mid_span)
+
     # when the range changes, update the track points we are plotting
-    trk_update = CustomJS(args=dict(src=source, dst=track_source), code= """
+    trk_update = CustomJS(args=dict(src=source, dst=track_source, mid_span=mid_span), code= """
         var s = src.data;
         var d = dst.data;
         const start = Math.max(0, cb_obj.start)
         const end = Math.min(s['x1'].length, cb_obj.end)
+        const mid = Math.round( (end - start) / 2 + start )
+
+        mid_span.location = mid
 
         d['x1'] = s['x1'].slice(start, end)
         d['z1'] = s['z1'].slice(start, end)
         d['x2'] = s['x2'].slice(start, end)
         d['z2'] = s['z2'].slice(start, end)
-        dst.change.emit();
+        dst.change.emit()
     """)
 
     p.x_range.js_on_change('start', trk_update) 
