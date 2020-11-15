@@ -81,10 +81,10 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
         'brake1': data1['brake'],
         'brake2': data2['brake'],
         'delta': delta,
-        'x1': invert_data(data1['x']),
-        'z1': data1['z'],
-        'x2': invert_data(data2['x']),
-        'z2': data2['z']
+        'x1': data1['x'],
+        'z1': invert_data(data1['z']),
+        'x2': data2['x'],
+        'z2': invert_data(data2['z'])
     }
 
     # calculate a starting range
@@ -252,10 +252,10 @@ def split_charts(file1, file2, output='plot.html', plot_width=1000, plot_height=
         'steer1': data1['steer'],
         'steer2': data2['steer'],
         'delta': delta,
-        'x1': invert_data(data1['x']),
-        'z1': data1['z'],
-        'x2': invert_data(data2['x']),
-        'z2': data2['z']
+        'x1': data1['x'],
+        'z1': invert_data(data1['z']),
+        'x2': data2['x'],
+        'z2': invert_data(data2['z'])
     }
 
     # calculate a starting range
