@@ -16,14 +16,22 @@ To plot you will need to install the [bokeh](https://docs.bokeh.org/en/latest/in
 
     python3 -m venv py
     py/bin/pip install bokeh numpy
+
+The run the plot within the venv:
+
     py/bin/python plot-example-split.py
+
+or
+
+    py/bin/python plot.py [lap1] [lap2] -o output.html
 
 This will create an output html file that looks something like this:
 
 ![example-split](example-split.png)
 
-You can click on the legends to mute any trace and the bottom slider allows you to narrow down the analysis
-to a specific range of measurements
+The plot uses `lap1` as the reference lap, so the `delta` is the amount `lap2` is ahead (-ve) or behind (+ve).
+You can click on the legends to mute any trace and the bottom slider allows you to narrow down the
+analysis to a specific range of measurements
 
 # TODO
 
