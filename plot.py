@@ -371,6 +371,7 @@ def split_charts(file1, file2, output='plot.html', plot_width=1000, plot_height=
     fig_steer.line('distance', 'steer2', name='steer2', muted_alpha=0.2, source=source, color='orange', legend_label="lap2", line_width=2, line_dash='dashed')
     fig_steer.legend.location = "top_left"
     fig_steer.legend.click_policy="mute"
+    fig_steer.y_range.flipped = True
 
     steer_hover_tool = HoverTool(
         tooltips = [('steer1', '@steer1{0.00 a}'), ('steer2', '@steer2{0.00 a}'),('delta', '@delta{0.00 a}')],
