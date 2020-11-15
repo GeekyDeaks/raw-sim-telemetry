@@ -77,6 +77,7 @@ class ACListener(threading.Thread):
         self.connected = False
         self.event = None
         self.updates = Queue()
+        self.idle = 0
 
     def run(self):
 
@@ -134,7 +135,14 @@ class ACListener(threading.Thread):
     def nextUpdate(self):
         u = self.recv(Update.size)
         if u:
+            self.idle = 0
             self.updates.put(Update.fromData(u), block=False)
+        else:
+            self.idle = self.idle + 1
+
+        if self.idle > 5:
+            print('updates stopped')
+            self.running = False
 
     def dismiss(self):
         pkt = struct.pack('iii',1,1,3)
@@ -209,14 +217,11 @@ if __name__ == '__main__':
 
     lastUpdate = None
     finished = False
-    lapDistance = 0
-
-    updateDistance = 1.0
+    update_distance = 0.1
 
     while acl.is_alive() and not finished:
 
         try:
-
             update = acl.updates.get(timeout=1) # to allow windows to use CTRL+C
 
             if not logger:
@@ -237,19 +242,14 @@ if __name__ == '__main__':
                     logger = Logger(logattr, acl.event)
 
                 logger.newlap(update)
-                lapDistance = 0
                 lastUpdate = copy(update)
             else:
                 
-                # calculate the running distance
                 delta = distance(lastUpdate.coords(), update.coords())
-                lastInterval = math.floor(lapDistance / updateDistance)
-                interval = math.floor((lapDistance + delta) / updateDistance)
-                
-                if lastInterval != interval:
+
+                if delta > update_distance:
                     logger.update(update)
                     lastUpdate = copy(update)
-                    lapDistance = lapDistance + delta
 
         except Empty:
             pass
@@ -258,6 +258,7 @@ if __name__ == '__main__':
             print('stopping')
             finished = True
 
-    logger.close()
+    if logger:
+        logger.close()
     acl.stop()
     acl.join()
