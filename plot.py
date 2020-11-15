@@ -1,5 +1,5 @@
 from bokeh.plotting import figure, output_file, show
-
+from bokeh.events import MouseMove
 from bokeh.layouts import column, row
 from bokeh.models import Div, ColumnDataSource, RangeTool, LinearAxis, Range1d, Title, FileInput, CustomJS, HoverTool, Span
 import csv
@@ -189,6 +189,22 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
     p.add_layout(mid_span)
     select.add_layout(mid_span)
 
+    hover_update = CustomJS(args=dict(src=source, pos_source=pos_source, mid_span=mid_span), code= """
+        var s = src.data
+        var p = pos_source.data
+        var mid = Math.floor(cb_obj.x)
+
+        mid_span.location = mid
+
+        p['x1'][0] = s['x1'][mid]
+        p['z1'][0] = s['z1'][mid]
+        p['x2'][0] = s['x2'][mid]
+        p['z2'][0] = s['z2'][mid]
+
+        pos_source.change.emit()
+    """)
+
+    p.js_on_event(MouseMove, hover_update)
     # when the range changes, update the track points we are plotting
     trk_update = CustomJS(args=dict(src=source, dst=track_source, mid_span=mid_span, pos_source=pos_source), code= """
         var s = src.data
@@ -401,6 +417,26 @@ def split_charts(file1, file2, output='plot.html', plot_width=1000, plot_height=
     fig_brake.add_layout(mid_span)
     fig_steer.add_layout(mid_span)
     select.add_layout(mid_span)
+
+    hover_update = CustomJS(args=dict(src=source, pos_source=pos_source, mid_span=mid_span), code= """
+        var s = src.data
+        var p = pos_source.data
+        var mid = Math.floor(cb_obj.x)
+
+        mid_span.location = mid
+
+        p['x1'][0] = s['x1'][mid]
+        p['z1'][0] = s['z1'][mid]
+        p['x2'][0] = s['x2'][mid]
+        p['z2'][0] = s['z2'][mid]
+
+        pos_source.change.emit()
+    """)
+
+    fig_mph.js_on_event(MouseMove, hover_update)
+    fig_gas.js_on_event(MouseMove, hover_update)
+    fig_brake.js_on_event(MouseMove, hover_update)
+    fig_steer.js_on_event(MouseMove, hover_update)
 
     # when the range changes, update the track points we are plotting
     trk_update = CustomJS(args=dict(src=source, dst=track_source, mid_span=mid_span, pos_source=pos_source), code= """
