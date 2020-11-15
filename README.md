@@ -15,7 +15,7 @@ with one row per approximate meter travelled and a summary `laps.txt`
 To plot you will need to install the [bokeh](https://docs.bokeh.org/en/latest/index.html) module. I recommend creating a `venv` e.g.
 
     python3 -m venv py
-    py/bin/pip install bokeh
+    py/bin/pip install bokeh numpy
     py/bin/python plot-example-split.py
 
 This will create an output html file that looks something like this:
@@ -28,7 +28,6 @@ to a specific range of measurements
 # TODO
 
 * log all the updates from AC rather than per approximate meter
-* interpolate updates in the plot
 
 # reference
 

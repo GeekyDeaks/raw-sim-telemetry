@@ -5,26 +5,57 @@ from bokeh.models import Div, ColumnDataSource, RangeTool, LinearAxis, Range1d, 
 import csv
 from datetime import datetime
 import argparse
+import numpy
+import math
 
-def load_lap(file):
+def distance(a, b):
+    return math.sqrt( (a[0] - b[0]) **2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2)
+
+
+def load_lap(file, ilen=0):
 
     data = {}
+    i = {}
+    last_point = None
+    dt = 0
     with open(file,'r') as dest_f:
         reader = csv.reader(dest_f, delimiter='\t')
 
-        data['distance'] = []
+        dist = []
         headers = next(reader, None)
         for h in headers:
             data[h] = []
 
         for row in reader:
-            data['distance'].append(reader.line_num - 1)
+
             for h, v in zip(headers, row):
                 data[h].append(float(v))
-    return data
 
-def pad_data(data, padlen):
-    return data + ([float('NaN')] * (padlen - len(data)) )
+            cur_point = (data['x'][-1], data['y'][-1], data['z'][-1])
+            if last_point:
+                # calc the delta
+                dt = dt + distance(last_point, cur_point)
+
+            dist.append(dt)
+            last_point = cur_point
+
+        total_dist = math.ceil(dist[-1])  
+
+        # how many interpolation points?  
+        if ilen == 0:
+            ilen =  total_dist
+        
+        i['distance'] = list(range(ilen))
+
+        # what is the ratio to the total distance of each point?
+        iratio = total_dist / ilen
+
+        ird = list(map(lambda x: x * iratio, i['distance']))
+
+        for d in data:
+            i[d] = numpy.interp(ird, dist, data[d]).tolist()
+
+    return i
 
 def invert_data(data):
     return list(map( lambda x: -x, data))
@@ -33,35 +64,32 @@ def invert_data(data):
 def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_height=600):
 
     data1 = load_lap(file1)
-    data2 = load_lap(file2)
+    ilen = len(data1['distance'])
 
-    dlen1 = len(data1['distance'])
-    dlen2 = len(data2['distance'])
-
-    # prepare some padded data
-    padto = max(dlen1, dlen2)
+    data2 = load_lap(file2, ilen=ilen)
 
     delta = []
     for i,j in zip(data1['lapTime'],data2['lapTime']):
         delta.append(float(j) - float(i))
 
     data = {
-        'mph1': pad_data(data1['speed_Mph'], padto),
-        'mph2': pad_data(data2['speed_Mph'], padto),
-        'gas1': pad_data(data1['gas'], padto),
-        'gas2': pad_data(data2['gas'], padto),
-        'brake1': pad_data(data1['brake'], padto),
-        'brake2': pad_data(data2['brake'], padto),
-        'delta': pad_data(delta, padto),
-        'x1': pad_data(invert_data(data1['x']), padto),
-        'z1': pad_data(data1['z'], padto),
-        'x2': pad_data(invert_data(data2['x']), padto),
-        'z2': pad_data(data2['z'], padto)
+        'distance': data1['distance'],
+        'mph1': data1['speed_Mph'],
+        'mph2': data2['speed_Mph'],
+        'gas1': data1['gas'],
+        'gas2': data2['gas'],
+        'brake1': data1['brake'],
+        'brake2': data2['brake'],
+        'delta': delta,
+        'x1': invert_data(data1['x']),
+        'z1': data1['z'],
+        'x2': invert_data(data2['x']),
+        'z2': data2['z']
     }
 
     # calculate a starting range
-    range_start=int(padto * 0.25)
-    range_end=int(padto * 0.5)
+    range_start=int(ilen * 0.25)
+    range_end=int(ilen * 0.5)
     range_mid = int( (range_end - range_start) / 2 + range_start  )
 
     # some initial data for the track, using the range determined above
@@ -78,12 +106,6 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
         x2=[ data['x2'][range_mid] ],
         z2=[ data['z2'][range_mid] ],
     ))
-
-    # we want to use the distance of the longest list
-    if dlen1 < dlen2:
-        data['distance'] = data2['distance']
-    else:
-        data['distance'] = data1['distance']
 
     source = ColumnDataSource(data=data)
 
@@ -211,37 +233,34 @@ def combined_charts(file1, file2, output='plot.html', plot_width=1000, plot_heig
 def split_charts(file1, file2, output='plot.html', plot_width=1000, plot_height=600):
 
     data1 = load_lap(file1)
-    data2 = load_lap(file2)
+    ilen = len(data1['distance'])
 
-    dlen1 = len(data1['distance'])
-    dlen2 = len(data2['distance'])
-
-    # prepare some padded data
-    padto = max(dlen1, dlen2)
+    data2 = load_lap(file2, ilen=ilen)
 
     delta = []
     for i,j in zip(data1['lapTime'],data2['lapTime']):
         delta.append(float(j) - float(i))
 
     data = {
-        'mph1': pad_data(data1['speed_Mph'], padto),
-        'mph2': pad_data(data2['speed_Mph'], padto),
-        'gas1': pad_data(data1['gas'], padto),
-        'gas2': pad_data(data2['gas'], padto),
-        'brake1': pad_data(data1['brake'], padto),
-        'brake2': pad_data(data2['brake'], padto),
-        'steer1': pad_data(data1['steer'], padto),
-        'steer2': pad_data(data2['steer'], padto),
-        'delta': pad_data(delta, padto),
-        'x1': pad_data(invert_data(data1['x']), padto),
-        'z1': pad_data(data1['z'], padto),
-        'x2': pad_data(invert_data(data2['x']), padto),
-        'z2': pad_data(data2['z'], padto)
+        'distance': data1['distance'],
+        'mph1': data1['speed_Mph'],
+        'mph2': data2['speed_Mph'],
+        'gas1': data1['gas'],
+        'gas2': data2['gas'],
+        'brake1': data1['brake'],
+        'brake2': data2['brake'],
+        'steer1': data1['steer'],
+        'steer2': data2['steer'],
+        'delta': delta,
+        'x1': invert_data(data1['x']),
+        'z1': data1['z'],
+        'x2': invert_data(data2['x']),
+        'z2': data2['z']
     }
 
     # calculate a starting range
-    range_start=int(padto * 0.25)
-    range_end=int(padto * 0.5)
+    range_start=int(ilen * 0.25)
+    range_end=int(ilen * 0.5)
     range_mid = int( (range_end - range_start) / 2 + range_start  )
 
     # some initial data for the track, using the range determined above
@@ -258,12 +277,6 @@ def split_charts(file1, file2, output='plot.html', plot_width=1000, plot_height=
         x2=[ data['x2'][range_mid] ],
         z2=[ data['z2'][range_mid] ],
     ))
-
-    # we want to use the distance of the longest list
-    if dlen1 < dlen2:
-        data['distance'] = data2['distance']
-    else:
-        data['distance'] = data1['distance']
 
     source = ColumnDataSource(data=data)
 
@@ -455,4 +468,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    combined_charts(args.lap1, args.lap2, output=args.out)
+    split_charts(args.lap1, args.lap2, output=args.out)
