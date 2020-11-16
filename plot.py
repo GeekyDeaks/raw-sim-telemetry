@@ -501,7 +501,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Assetto Corsa Telemetry Plotter')
     parser.add_argument('lap1', nargs='?', help='reference lap file')
     parser.add_argument('lap2', nargs='?', help='compare lap file')  
-    parser.add_argument('out', nargs='?', help='output filename')
+    parser.add_argument('out', nargs='?', default='plot.html', help='output filename')
 
     args = parser.parse_args()
 
