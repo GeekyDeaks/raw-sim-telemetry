@@ -11,15 +11,6 @@ import threading
 import math
 from queue import Queue, Empty
 
-
-
-def distance(a, b) :
-    [x1,y1,z1] = a  # first coordinates
-    [x2,y2,z2] = b  # second coordinates
-
-    return (((x2-x1)**2)+((y2-y1)**2)+((z2-z1)**2))**(1/2)
-
-
 class Handshake:
     fmt = '<100s100sII100s100s'
     size = struct.calcsize(fmt)
@@ -36,7 +27,6 @@ class Handshake:
     def fromData(cls, d):
         return cls(struct.unpack(Handshake.fmt, d))
         
-
     def __str__(self):
         return '{self.carName}, {self.driverName}, {self.trackName}, {self.trackConfig}'.format(self=self)
 
@@ -64,6 +54,11 @@ class Update:
 
     def coords(self):
         return [self.x, self.y, self.z]
+
+    def distanceFrom(self, other):
+        [x1,y1,z1] = self.coords()  # first coordinates
+        [x2,y2,z2] = other.coords()  # second coordinates
+        return (((x2-x1)**2)+((y2-y1)**2)+((z2-z1)**2))**(1/2)
 
 
 class ACListener(threading.Thread):
@@ -233,19 +228,22 @@ if __name__ == '__main__':
             if not lastUpdate:
                 logger.newlap(update)
                 lastUpdate = copy(update)
-            elif lastUpdate.lapCount != update.lapCount or lastUpdate.lapTime > (update.lapTime + 5):
 
-                if lastUpdate.lapCount > update.lapCount + 5:
-                    # must have re-started the event
-                    # so get a new logger
-                    logger.close()
-                    logger = Logger(logattr, acl.event)
-
+            elif lastUpdate.lapCount < update.lapCount or lastUpdate.lapTime > (update.lapTime + 5):
+                # must have re-started the event
+                # so get a new logger
+                logger.close()
+                logger = Logger(logattr, acl.event)
                 logger.newlap(update)
                 lastUpdate = copy(update)
+
+            elif lastUpdate.lapCount > update.lapCount:
+                logger.newlap(update)
+                lastUpdate = copy(update)
+
             else:
                 
-                delta = distance(lastUpdate.coords(), update.coords())
+                delta = lastUpdate.distanceFrom(update)
 
                 if delta > update_distance:
                     logger.update(update)
