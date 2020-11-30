@@ -85,7 +85,6 @@ class ACListener(threading.Thread):
 
         if self.event:
             print('connected')
-            print(self.event)
 
             self.startUpdate()
 
@@ -164,6 +163,8 @@ class Logger:
         lapfn = os.path.join(self.path, 'laps.txt')
         self.lf = open(lapfn, mode='w', buffering=1)
         self.lf.write('\t'.join(['lap', 'time']) + '\n')
+        print('logging to: {path}'.format(path=self.path))
+
 
     def newlap(self, update):
         if self.f:
@@ -229,7 +230,7 @@ if __name__ == '__main__':
                 logger.newlap(update)
                 lastUpdate = copy(update)
 
-            elif lastUpdate.lapCount < update.lapCount or lastUpdate.lapTime > (update.lapTime + 5):
+            elif lastUpdate.lapCount > update.lapCount:
                 # must have re-started the event
                 # so get a new logger
                 logger.close()
@@ -237,7 +238,7 @@ if __name__ == '__main__':
                 logger.newlap(update)
                 lastUpdate = copy(update)
 
-            elif lastUpdate.lapCount > update.lapCount:
+            elif lastUpdate.lapCount < update.lapCount or lastUpdate.lapTime > (update.lapTime + 5):
                 logger.newlap(update)
                 lastUpdate = copy(update)
 
