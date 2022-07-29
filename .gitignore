@@ -1,4 +1,8 @@
 .DS_Store
+*.html
+!example*.html
+plot-*.py
+!plot-example*.py
 out/
 tmp/
 py/

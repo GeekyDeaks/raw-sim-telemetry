@@ -486,7 +486,7 @@ def split_charts(file1, file2, output='plot.html', plot_width=1000, plot_height=
     )
     subtitle.sizing_mode = 'stretch_width'
     title = row( 
-        Div(text='<h1 style="margin:0;">AC Telemetry</h1>'),
+        Div(text='<h1 style="margin:0;">Sim Telemetry</h1>'),
         subtitle
     )
     title.sizing_mode = 'stretch_width'
@@ -498,11 +498,13 @@ def split_charts(file1, file2, output='plot.html', plot_width=1000, plot_height=
 if __name__ == '__main__':
 
 
-    parser = argparse.ArgumentParser(description='Assetto Corsa Telemetry Plotter')
+    parser = argparse.ArgumentParser(description='Raw Telemetry Plotter')
     parser.add_argument('lap1', nargs='?', help='reference lap file')
     parser.add_argument('lap2', nargs='?', help='compare lap file')  
     parser.add_argument('out', nargs='?', default='plot.html', help='output filename')
 
     args = parser.parse_args()
+
+    print(args.out)
 
     split_charts(args.lap1, args.lap2, output=args.out)
