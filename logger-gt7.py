@@ -15,7 +15,7 @@ if len(sys.argv) == 2:
     # Get "IP address of Server" and also the "port number" from
     ip = sys.argv[1]
 else:
-    print("Run like : python3 gt7racedata.py <playstation-ip>")
+    print("Usage: python logger-gt.py <playstation-ip>")
     exit(1)
 
 
@@ -54,7 +54,7 @@ packet_data_struct = [
     (0x50,1,"FLOAT","TURBO_BOOST"),
     (0x54,1,"FLOAT","OIL_PRESSURE"),
     (0x58,1,"FLOAT","UNKNOWN_0x58"),
-    (0x5C,1,"FLOAT","UNKNOWN_0x58"),
+    (0x5C,1,"FLOAT","UNKNOWN_0x5C"),
     (0x60,4,"FLOAT","TYRES_TEMP"),
     (0x70,1,"INT","TICK"),
     (0x74,2,"SHORT","LAPS"),
@@ -63,9 +63,9 @@ packet_data_struct = [
     (0x80,1,"INT","DAYTIME_PROGRESSION"),
     (0x84,2,"SHORT","RACE_POSITION"),
     (0x88,4,"SHORT","ALERTS"),
-    (0x8F,1,"BYTE", "GEAR"),
-    (0x90,1,"BYTE", "THROTTLE"),
-    (0x91,1,"BYTE", "BRAKE"),
+    (0x90,1,"BYTE", "GEAR"),
+    (0x91,1,"BYTE", "THROTTLE"),
+    (0x92,1,"BYTE", "BRAKE"),
     (0x94,4,"FLOAT","WHEELS_SPEED"),
     (0xA4,4,"FLOAT","TYRES_RADIUS"),
     (0xB4,4,"FLOAT","TYRE_SUSPENSION_TRAVEL"),
@@ -120,7 +120,7 @@ def send_hb(s):
   #send HB
   send_data = 'A'
   s.sendto(send_data.encode('utf-8'), (ip, SendPort))
-  print('send heartbeat')
+  #print('send heartbeat')
 send_hb(s)
 print("Ctrl+C to exit the program")
 pknt = 0
@@ -159,7 +159,7 @@ while True:
     dayTime = packet_data["DAYTIME_PROGRESSION"][0]
     gas = packet_data["THROTTLE"][0]
     brake = packet_data["BRAKE"][0]
-    gear = packet_data["GEAR"][0] >> 4
+    gear = packet_data["GEAR"][0] & 0x0f
 
     if pknt > 100:
       send_hb(s)
@@ -168,7 +168,7 @@ while True:
 
     if lastLap != lap:
 
-        print(f"starting lap {lap}")
+        #print(f"starting lap {lap}")
 
         if fout:
             fout.flush()
@@ -187,9 +187,10 @@ while True:
 
     if fout:
         lapTime = dayTime - startTime
-        data = [ str(lapTime), str(speed), str(gas), str(brake), str(0), str(gear), str(x), str(y), str(z)]
+        data = [ str(lapTime/1000), str(speed), str(gas), str(brake), str(0), str(gear), str(x), str(y), str(z)]
         fout.write( "\t".join(data) + "\n")
         fout.flush()
+        print(f"LAP: {lap:>2} GAS: {gas:>3} BRAKE: {brake:>3} GEAR: {gear:>1}, SPEED: {speed:.2f}\r", end='')
 
   except Exception as e:
     print(e)
